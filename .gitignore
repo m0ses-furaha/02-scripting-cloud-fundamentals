@@ -14,8 +14,3 @@ credentials.csv
 .DS_Store
 Thumbs.db
 *.swp
-
-# Terraform, if you end up reaching for it beyond the required Bash script
-.terraform/
-*.tfstate
-*.tfstate.backup

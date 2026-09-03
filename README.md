@@ -53,3 +53,50 @@ running total.
 Something in your environment will change without warning during your defense
 walkthrough. That's expected — see `docs/INCIDENT_REPORT.md` for the template you'll
 fill in once it happens.
+
+## Architecture
+
+```
+config/config.sh                    single source of truth: names, region, tags
+        │
+        ├── scripts/provision_developer.sh   creates SG, S3 bucket, EC2 instance, IAM user/group/policy
+        ├── scripts/scheduled_task.sh        recurring drift, tag-compliance, and budget report
+        ├── scripts/cleanup.sh               tears down everything provision_developer.sh created
+        └── policies/developer-policy.json   least-privilege policy attached to the IAM group
+
+config/developer.yaml, developer.json   hand-authored app config, same content in both formats
+scripts/cli_script.sh                   standalone EC2 launch path with an embedded user-data bootstrap
+```
+
+`provision_developer.sh`, `scheduled_task.sh`, and `cleanup.sh` all source the same
+`config/config.sh`, so a resource name, region, or tag value only has to change in one
+place to stay consistent across provisioning, monitoring, and teardown.
+
+## Best practices followed
+
+- **Idempotency** — every create step in `provision_developer.sh` checks for an
+  existing resource (by name or tag) before creating one, so re-running the script
+  never errors and never duplicates a resource. `cleanup.sh` mirrors this: every delete
+  step checks existence first and skips cleanly if the resource is already gone.
+- **Least privilege, justified** — `policies/developer-policy.json` scopes each
+  statement to the specific actions the persona needs, with resource ARNs and
+  `ec2:ResourceTag` conditions restricting access to the student's own resources
+  wherever the AWS API allows it. The one exception (`ce:GetCostAndUsage`, needed for
+  the budget check) is called out on its own because Cost Explorer has no
+  resource-level permissions to scope it with.
+- **Consistent tagging for cost allocation** — `owner`, `cost-center`, `environment`,
+  and `managed-by` are applied to every resource `provision_developer.sh` creates, and
+  `scheduled_task.sh` actively checks for their presence rather than assuming they
+  stick.
+- **No plaintext secrets** — `developer.yaml` and `developer.json` reference
+  `${AWS_ACCESS_KEY_ID}` / `${AWS_SECRET_ACCESS_KEY}` as environment-variable
+  placeholders rather than literal credentials.
+- **Fail-soft monitoring** — `scheduled_task.sh` degrades to a `[WARN]` log line
+  instead of crashing under `set -euo pipefail` when a resource or cost figure isn't
+  available yet (e.g. Cost Explorer's ~24h reporting lag), so a transient gap in data
+  doesn't take down the whole compliance run.
+- **Proactive budget visibility** — the AWS Budget alarm mentioned in
+  `aws-sandbox-account-access.md` only notifies the instructor. `scheduled_task.sh`
+  adds a second, student-facing check: month-to-date Cost Explorer spend against the
+  $20 budget with an 80% warning threshold, logged on every scheduled run instead of
+  relying on a single end-of-exercise figure.
