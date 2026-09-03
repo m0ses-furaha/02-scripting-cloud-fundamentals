@@ -1,0 +1,26 @@
+{
+  "app": {
+    "name": "kente-retail-app",
+    "environment": "dev",
+    "owner": "mf01"
+  },
+  "aws": {
+    "region": "eu-north-1",
+    "ec2_instance_name": "mf01-app-server",
+    "security_group": "mf01-sg",
+    "s3_bucket": "${BUCKET_NAME}"
+  },
+  "logging": {
+    "log_group": "/kente-retail/mf01",
+    "level": "INFO"
+  },
+  "access": {
+    "developer_user": "mf01-developer",
+    "developer_group": "mf01-developers",
+    "developer_policy": "mf01-developer-policy"
+  },
+  "aws_credentials": {
+    "access_key_id": "${AWS_ACCESS_KEY_ID}",
+    "secret_access_key": "${AWS_SECRET_ACCESS_KEY}"
+  }
+}

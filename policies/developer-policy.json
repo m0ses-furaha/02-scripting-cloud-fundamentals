@@ -1,0 +1,63 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DescribeEc2ForVisibility",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeTags",
+        "ec2:DescribeSecurityGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ManageOwnEc2Instance",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:RebootInstances"
+      ],
+      "Resource": "arn:aws:ec2:${REGION}:${ACCOUNT_ID}:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "ec2:ResourceTag/owner": "${STUDENT_PREFIX}"
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteOwnS3Bucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${BUCKET_NAME}",
+        "arn:aws:s3:::${BUCKET_NAME}/*"
+      ]
+    },
+    {
+      "Sid": "ReadOwnApplicationLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents"
+      ],
+      "Resource": "arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:/kente-retail/${STUDENT_PREFIX}*:*"
+    },
+    {
+      "Sid": "ReadCostAndUsageForBudgetCheck",
+      "Effect": "Allow",
+      "Action": [
+        "ce:GetCostAndUsage"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
